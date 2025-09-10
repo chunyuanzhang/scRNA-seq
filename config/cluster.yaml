@@ -1,0 +1,15 @@
+tools:
+  cellranger: export PATH=/home/zhangchunyuan/tools/cellranger-9.0.1/bin:$PATH
+
+
+scripts:
+  scRNA:
+    #Seurat: scripts/scRNA/Seurat.R
+    Seurat_Create: scripts/scRNA/Seurat_Create.R
+    Seurat_Cluster: scripts/scRNA/Seurat_Cluster.R
+    Seurat_Marker: scripts/scRNA/Seurat_Marker.R
+    Seurat_DE: scripts/scRNA/Seurat_DE.R
+    Seurat_vis: scripts/scRNA/Seurat_vis.R
+    CellTyping: scripts/scRNA/CellTyping.R
+    subcelltype: scripts/scRNA/subcelltype.R
+

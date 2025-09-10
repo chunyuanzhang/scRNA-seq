@@ -1,0 +1,38 @@
+
+step: count
+
+species: duck 
+
+scrna_reference: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.fna
+scrna_gtf: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.gtf
+scrna_genomename: IASCAAS_PekinDuck_T2T
+
+samplefile: config/sampleandpopulation.csv
+
+
+
+analysis:
+  count:
+    include_introns: true
+    output_bam: true
+  create:
+    percentMT: 5
+  cluster:
+    resolution: 0.3
+  marker:
+    topn: 10
+    by: celltype.manual
+  celltype:
+    Orthologous: "result/scRNA/05.CellType/Orthologous.csv"
+  diffexp:
+    scrna_DiffParamsFile: "config/scRNA_differential_expression.csv"
+    # topn: 10
+    p_val: 0.05
+    avg_log2FC: 1
+    min_pct1: 0.5
+  subcelltype:
+    target_cluster: 6
+  AlternativeSplincing:
+    version_10X_chemistry: V3
+    show_protein_coding_only: true
+
