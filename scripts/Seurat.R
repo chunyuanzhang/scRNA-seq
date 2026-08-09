@@ -34,26 +34,27 @@ SampleFile <- args$SampleFile
 #-------------------------------------------------------------------------------
 
 sampletable <- read.delim(file = SampleFile, sep = ",")
-print(sampletable)
-
 samples <- sampletable$SampleID
 #dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
 dirlist <- paste0("result/02.Count/", samples, "/outs/filter_matrix/") 
+
+message("Reading samples: ", paste0(dirlist, collapse = ", "))
 names(dirlist) <- samples
 scdata.data <- Read10X(data.dir = dirlist)
 scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cells = 3, min.features = 200)
+
 
 
 #-------------------------------------------------------------------------------
 # 基础质量控制
 #-------------------------------------------------------------------------------
 
-
+message("Quality control")
 # 计算线粒体比例
 scdata[["percent.mt"]] <- PercentageFeatureSet(scdata, pattern = "J6367")
 
 # Visualize QC metrics as a violin plot
-VlnPlot(scdata, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+# VlnPlot(scdata, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 
 # 质量控制
 upperlimit <- scdata@meta.data |> group_by(orig.ident) |> summarise(upperlimit_nFeature_RNA = nFeature_RNA |> quantile(0.95)) |> ungroup() |> as.data.frame()
@@ -65,6 +66,7 @@ scdata <- subset(scdata, cells = scdata@meta.data |> filter(nFeature_RNA > 500 &
 # 双胞检测
 #-------------------------------------------------------------------------------
 
+message("Double cell check")
 # nFeature_RNA 太高，或者 percent.mt 太高都有可能是双胞
 # 下面进行双胞检验
 ## Pre-process Seurat object (standard) --------------------------------------------------------------------------------------
