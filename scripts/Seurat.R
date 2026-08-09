@@ -33,7 +33,7 @@ SampleFile <- args$SampleFile
 # 读取数据
 #-------------------------------------------------------------------------------
 
-sampletable <- read.delim(file = SampleFile, sep = ",")
+sampletable <- read.delim(file = SampleFile, sep = ",", header = TRUE, stringsAsFactors = FALSE, check.names = FALSE, comment.char = "#")
 samples <- sampletable$SampleID
 #dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
 dirlist <- paste0("result/02.Count/", samples, "/outs/filter_matrix/") 
@@ -79,22 +79,47 @@ scdata <- RunUMAP(scdata, dims = 1:10)
 ## Run DoubletFinder with varying classification stringencies ----------------------------------------------------------------
 scdata <- doubletFinder(scdata, PCs = 1:10, pN = 0.25, pK = 0.09, nExp = ncol(scdata) * 0.075, reuse.pANN = NULL, sct = FALSE)
 
-saveRDS(object = scdata, file = "scdata.rds")
-
 
 # 提取过滤双胞后的数据
-# df_col <- colnames(scdata@meta.data) |> grep(pattern = "DF", value = T)
-# scdata_filterbydoublecell <- subset(scdata, cells = scdata@meta.data[scdata@meta.data[[df_col]] == "Singlet",] |> rownames() )
-# 
-# 
-# 
-# scdata_filterbydoublecell <- NormalizeData(scdata_filterbydoublecell, normalization.method = "LogNormalize", scale.factor = 10000)
+df_col <- colnames(scdata@meta.data) |> grep(pattern = "DF", value = T)
+scdata <- subset(scdata, cells = scdata@meta.data[scdata@meta.data[[df_col]] == "Singlet",] |> rownames() )
+
+saveRDS(object = scdata, file = "scdata.filterbydoublecell.rds")
 
 
 #-------------------------------------------------------------------------------
-# 整合样本、降维
+# 整合样本
 #-------------------------------------------------------------------------------
 
+message("\n\nIntegrateLayers\n\n")
+
+scdata <- IntegrateLayers(object = scdata, 
+    method = CCAIntegration, 
+    orig.reduction = "pca", 
+    new.reduction = "integrated.cca",
+    verbose = FALSE)
+
+# re-join layers after integration
+scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
+
+#-------------------------------------------------------------------------------
+# 整合后的样本降维聚类【整合后不能再运行normalized】
+#-------------------------------------------------------------------------------
+
+message("\n\n Rerun UMAP\n\n") 
+scdata <- FindNeighbors(scdata, reduction = "integrated.cca", dims = 1:30)
+scdata <- FindClusters(scdata, resolution = 1)
+scdata <- RunUMAP(scdata, dims = 1:30)
+
+saveRDS(object = scdata, file = "scdata.rds")
+
+#-------------------------------------------------------------------------------
+# 可视化
+#-------------------------------------------------------------------------------
+
+# Visualization
+# p1 <- DimPlot(scdata, reduction = "umap", group.by = c("stim", "seurat_annotations"))
+# p2 <- DimPlot(scdata, reduction = "umap", split.by = "stim")
 
 
 
