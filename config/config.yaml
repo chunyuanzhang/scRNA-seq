@@ -1,12 +1,16 @@
 
+scRNA_platform: BGI  #10X
 step: count
 
-species: duck 
+species: Chicken 
 
-scrna_reference: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.fna
-scrna_gtf: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.gtf
-scrna_genomename: IASCAAS_PekinDuck_T2T
+# scrna_reference: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.fna
+# scrna_gtf: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.gtf
+# scrna_genomename: IASCAAS_PekinDuck_T2T
 
+scrna_reference: /home/zhangchunyuan/zhangchunyuan/reference/bGalGal1_mat_broiler_GRCg7b/GCF_016699485.2_bGalGal1.mat.broiler.GRCg7b_genomic.fna
+scrna_gtf: /home/zhangchunyuan/zhangchunyuan/reference/bGalGal1_mat_broiler_GRCg7b/GCF_016699485.2_bGalGal1.mat.broiler.GRCg7b_genomic.gtf
+scrna_genomename: bGalGal1_mat_broiler_GRCg7b
 samplefile: config/sampleandpopulation.csv
 
 

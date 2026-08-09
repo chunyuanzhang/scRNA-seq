@@ -18,6 +18,8 @@ configfile: "config/cluster.yaml"
 
 cwd = os.getcwd()
 
+scRNA_platform = config["scRNA_platform"]
+
 ### step =================================================================================================================
 step = config["step"]
 if step is not None:
@@ -30,26 +32,30 @@ else:
 ### species ==============================================================================================================
 species = config["species"]
 
+
+
 ### samples and populations ==============================================================================================
 samplefile = config["samplefile"]
 if os.path.exists(samplefile):
     # 样本和群体的对应表格
     samples = pd.read_csv(samplefile, sep=",", dtype=str, index_col = False)
     samples.dropna(how='all', inplace=True) # 删除可能存在的空行
-    samples = samples[ ~np.array([s.startswith("#") for s in samples.sampleid.to_list()])]
-    samples.index = samples.sampleid
+    samples = samples[ ~np.array([s.startswith("#") for s in samples.SampleID.to_list()])]
+    samples.index = samples.SampleID
     # 将群体以字典的方式存储，方便任何时候提取
-    group_dict = samples.groupby("groupid")['sampleid'].apply(list).to_dict()
+    group_dict = samples.groupby("GroupID")['SampleID'].apply(list).to_dict()
     groups = list(group_dict.keys())
 
     wildcard_constraints:
-        samples = "|".join(samples.sampleid)
+        samples = "|".join(samples.SampleID)
     wildcard_constraints:
         groups = "|".join(group_dict.keys())
 
 else:
     print(f"您尚未准备好样本文件{samplefile}")
     os._exit(0)
+
+
 
 ####################################################
 # single cell analysis
@@ -62,6 +68,7 @@ scrna_genomename = config["scrna_genomename"]
 # 检查参考基因组是否存在
 if not scrna_reference.endswith("fasta/genome.fa") or not scrna_gtf.endswith("genes/genes.gtf.gz"):
     mkref = True
+
 
 # 参数提取和传递
 include_introns = config["analysis"]["count"]["include_introns"]

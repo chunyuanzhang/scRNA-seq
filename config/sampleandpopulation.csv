@@ -1,7 +1,6 @@
-sampleid,groupid
-DL212,case
-DP61,case
-DP98,case
-DP252,control
-DP262,control
-DP280,control
+SampleID,GroupID,anno
+SRR29909592,Chicken,CecalTonsil_2
+SRR29909593,Chicken,CecalTonsil_1
+SRR29909594,Chicken,Cecum
+SRR29909598,Chicken,Spleen_1
+SRR29909597,Chicken,Spleen_2
