@@ -37,7 +37,8 @@ sampletable <- read.delim(file = SampleFile, sep = ",")
 print(sampletable)
 
 samples <- sampletable$SampleID
-dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
+#dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
+dirlist <- paste0("result/02.Count/", samples, "/outs/filter_matrix/") 
 names(dirlist) <- samples
 scdata.data <- Read10X(data.dir = dirlist)
 scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cells = 3, min.features = 200)
