@@ -38,7 +38,7 @@ samples <- sampletable$SampleID
 #dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
 dirlist <- paste0("result/02.Count/", samples, "/outs/filter_matrix/") 
 
-message("Reading samples: ", paste0(dirlist, collapse = ", "))
+message("\n\ntReading samples: ", paste0(dirlist, collapse = ", "), "\n\n")
 names(dirlist) <- samples
 scdata.data <- Read10X(data.dir = dirlist)
 scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cells = 3, min.features = 200)
@@ -49,7 +49,7 @@ scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cell
 # 基础质量控制
 #-------------------------------------------------------------------------------
 
-message("Quality control")
+message("\n\nQuality control\n\n")
 # 计算线粒体比例
 scdata[["percent.mt"]] <- PercentageFeatureSet(scdata, pattern = "J6367")
 
@@ -66,7 +66,7 @@ scdata <- subset(scdata, cells = scdata@meta.data |> filter(nFeature_RNA > 500 &
 # 双胞检测
 #-------------------------------------------------------------------------------
 
-message("Double cell check")
+message("\n\nDouble cell check\n\n")
 # nFeature_RNA 太高，或者 percent.mt 太高都有可能是双胞
 # 下面进行双胞检验
 ## Pre-process Seurat object (standard) --------------------------------------------------------------------------------------
