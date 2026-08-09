@@ -7,12 +7,14 @@
 
 
 # setwd("~/Desktop/04.湘湖实验室/姜雨鸡单细胞")
+suppressMessages({
+  library(dplyr)
+  library(Seurat)
+  library(patchwork)
+  library(DoubletFinder)
+  library(optparse)
+})
 
-library(dplyr)
-library(Seurat)
-library(patchwork)
-library(DoubletFinder)
-library(optparse)
 
 #-------------------------------------------------------------------------------
 # 参数传递
@@ -32,6 +34,7 @@ SampleFile <- args$SampleFile
 #-------------------------------------------------------------------------------
 
 sampletable <- read.delim(file = SampleFile, sep = ",")
+print(sampletable)
 
 samples <- sampletable$SampleID
 dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
