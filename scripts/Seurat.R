@@ -14,6 +14,7 @@ suppressMessages({
   library(DoubletFinder)
   library(optparse)
   library(ggplot2)
+  library(S4Vectors)
 })
 
 
@@ -36,6 +37,13 @@ percentMT <- args$percentMT
 # SampleFile <- "~/Desktop/04.湘湖实验室/姜雨鸡单细胞/sampleandpopulation.csv"
 # MTpattern <- "J6367"
 # percentMT <- 15
+
+
+plus_one <- function(r){
+  r <<- r + 1
+}
+
+r <- 0
 #-------------------------------------------------------------------------------
 # 读取数据
 #-------------------------------------------------------------------------------
@@ -45,7 +53,7 @@ samples <- sampletable$SampleID
 #dirlist <- paste0("~/Desktop/04.湘湖实验室/姜雨鸡单细胞/", samples) 
 dirlist <- paste0("result/02.Count/", samples, "/outs/filter_matrix/") 
 
-message("\n\ntReading samples: ", paste0(dirlist, collapse = ", "), "\n\n")
+message("\n\n", plus_one(r), ": Reading samples: ", paste0(dirlist, collapse = ", "), "\n\n")
 names(dirlist) <- samples
 scdata.data <- Read10X(data.dir = dirlist)
 scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cells = 3, min.features = 200)
@@ -56,7 +64,7 @@ scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cell
 # 基础质量控制
 #-------------------------------------------------------------------------------
 
-message("\n\nQuality control\n\n")
+message("\n\n", plus_one(r) ,": Quality control\n\n")
 # 计算线粒体比例
 scdata[["percent.mt"]] <- PercentageFeatureSet(scdata, pattern = MTpattern)
 
@@ -81,23 +89,40 @@ scdata <- subset(scdata, cells = scdata@meta.data |> filter(nFeature_RNA > 500 &
 #   nFeature_RNA 太高，或者 percent.mt 太高都有可能是双胞
 #-------------------------------------------------------------------------------
 
-message("\n\nDouble cell check\n\n")
+message("\n\n",plus_one(r),": Double cell check\n\n")
 
 seu_list <- SplitObject(scdata, split.by = "orig.ident")
 
+## 对细胞数量进行计数
+sample_cellnumber <- lapply(seu_list, function(x) {
+  ncol(x)
+}) |> as.data.frame() |> t() |> as.data.frame() |> setNames("NumberOfCells")
+
+write.table(x = sample_cellnumber, file = "NumberOfCells.tsv", quote = F, sep = "\t")
+if(any(sample_cellnumber$NumberOfCells < 100 )){
+  message("\n\n\n存在细胞数量过低样本，请核查\n\n\n")
+  quit()
+}
+
+
 seu_list <- lapply(seu_list, function(x) {
+  SampleID <- x@meta.data$orig.ident |> unique() |> unfactor()
+  message("\n\n当前样本 ",SampleID, "\n\n")
   x <- NormalizeData(x)
   x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
   x <- ScaleData(x)
-  x <- RunPCA(x)
-  x <- RunUMAP(x, dims = 1:10)
+  
+  max_pcs <- min(ncol(x), nrow(x), 51) - 1
+  use_dims <- min(max_pcs, 10)
+  
+  x <- RunPCA(x, npcs = max_pcs)
+  x <- RunUMAP(x, dims = 1:use_dims)
   x <- doubletFinder(x, PCs = 1:10, pN = 0.25, pK = 0.09,
                      nExp = ncol(x) * 0.075, reuse.pANN = NULL, sct = FALSE)
   df_col <- grep("^DF", colnames(x@meta.data), value = TRUE)
   x <- subset(x, cells = rownames(x@meta.data[x@meta.data[[df_col]] == "Singlet", ]))
   x
 })
-
 
 message("\n\nMerge samples\n\n")
 if (length(seu_list) == 1) {
@@ -114,7 +139,7 @@ remove(seu_list)
 # v5 中 merge 后 RNA assay 已按 orig.ident 自动分 layer
 #-------------------------------------------------------------------------------
 
-message("\n\nNormalization & PCA\n\n")
+message("\n\n",plus_one(r),": Normalization & PCA\n\n")
 scdata <- NormalizeData(scdata)
 scdata <- FindVariableFeatures(scdata, selection.method = "vst", nfeatures = 2000)
 scdata <- ScaleData(scdata)
@@ -127,7 +152,7 @@ scdata <- RunPCA(scdata)
 # CCA 整合（Seurat v5 IntegrateLayers）
 #-------------------------------------------------------------------------------
 
-message("\n\nCCA Integration\n\n")
+message("\n\n",plus_one(r),": CCA Integration\n\n")
 # scdata <- IntegrateLayers(
 #   object         = scdata,
 #   method         = CCAIntegration,
@@ -150,7 +175,7 @@ scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
 # 整合后降维聚类
 #-------------------------------------------------------------------------------
 
-message("\n\nClustering & UMAP\n\n")
+message("\n\n", plus_one(r),": Clustering & UMAP\n\n")
 scdata <- FindNeighbors(scdata, reduction = "harmony", dims = 1:30)
 scdata <- FindClusters(scdata, resolution = 1)
 scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
