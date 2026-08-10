@@ -13,6 +13,7 @@ suppressMessages({
   library(patchwork)
   library(DoubletFinder)
   library(optparse)
+  library(ggplot2)
 })
 
 
@@ -57,70 +58,149 @@ scdata[["percent.mt"]] <- PercentageFeatureSet(scdata, pattern = "J6367")
 # VlnPlot(scdata, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 
 # 质量控制
-upperlimit <- scdata@meta.data |> group_by(orig.ident) |> summarise(upperlimit_nFeature_RNA = nFeature_RNA |> quantile(0.95)) |> ungroup() |> as.data.frame()
-scdata@meta.data$upperlimit_nFeature_RNA <- scdata@meta.data |> left_join(upperlimit, by = "orig.ident") |> pull(upperlimit_nFeature_RNA)
+upperlimit <- scdata@meta.data |> 
+  group_by(orig.ident) |> 
+  summarise(upperlimit_nFeature_RNA = nFeature_RNA |> quantile(0.95)) |> 
+  ungroup() |> 
+  as.data.frame()
+scdata@meta.data$upperlimit_nFeature_RNA <- scdata@meta.data |> 
+  left_join(upperlimit, by = "orig.ident") |> 
+  pull(upperlimit_nFeature_RNA)
 scdata <- subset(scdata, cells = scdata@meta.data |> filter(nFeature_RNA > 500 & nFeature_RNA < upperlimit_nFeature_RNA & percent.mt < 15) |> rownames())
 
 
 #-------------------------------------------------------------------------------
 # 双胞检测
+# DoubletFinder 需要在每个样本上独立跑，所以这里先拆再合
+#   nFeature_RNA 太高，或者 percent.mt 太高都有可能是双胞
 #-------------------------------------------------------------------------------
 
 message("\n\nDouble cell check\n\n")
-# nFeature_RNA 太高，或者 percent.mt 太高都有可能是双胞
-# 下面进行双胞检验
-## Pre-process Seurat object (standard) --------------------------------------------------------------------------------------
-scdata <- NormalizeData(scdata)
-scdata <- FindVariableFeatures(scdata, selection.method = "vst", nfeatures = 2000)
-scdata <- ScaleData(scdata)
-scdata <- RunPCA(scdata)
-scdata <- RunUMAP(scdata, dims = 1:10)
 
-## Run DoubletFinder with varying classification stringencies ----------------------------------------------------------------
-scdata <- doubletFinder(scdata, PCs = 1:10, pN = 0.25, pK = 0.09, nExp = ncol(scdata) * 0.075, reuse.pANN = NULL, sct = FALSE)
+seu_list <- SplitObject(scdata, split.by = "orig.ident")
 
+seu_list <- lapply(seu_list, function(x) {
+  x <- NormalizeData(x)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  x <- ScaleData(x)
+  x <- RunPCA(x)
+  x <- RunUMAP(x, dims = 1:10)
+  x <- doubletFinder(x, PCs = 1:10, pN = 0.25, pK = 0.09,
+                     nExp = ncol(x) * 0.075, reuse.pANN = NULL, sct = FALSE)
+  df_col <- grep("^DF", colnames(x@meta.data), value = TRUE)
+  x <- subset(x, cells = rownames(x@meta.data[x@meta.data[[df_col]] == "Singlet", ]))
+  x
+})
 
-# 提取过滤双胞后的数据
-df_col <- colnames(scdata@meta.data) |> grep(pattern = "DF", value = T)
-scdata <- subset(scdata, cells = scdata@meta.data[scdata@meta.data[[df_col]] == "Singlet",] |> rownames() )
-
-saveRDS(object = scdata, file = "scdata.filterbydoublecell.rds")
+scdata <- merge(seu_list[[1]], y = seu_list[-1], project = "jiangyu")
 
 
 #-------------------------------------------------------------------------------
 # 整合样本
+# Seurat v5 标准流程：归一化 → HVG → Scale → PCA
+# v5 中 merge 后 RNA assay 已按 orig.ident 自动分 layer
 #-------------------------------------------------------------------------------
 
-message("\n\nIntegrateLayers\n\n")
 
-scdata <- IntegrateLayers(object = scdata, 
-    method = CCAIntegration, 
-    orig.reduction = "pca", 
-    new.reduction = "integrated.cca",
-    verbose = FALSE)
+message("\n\nNormalization & PCA\n\n")
+scdata <- NormalizeData(scdata)
+scdata <- FindVariableFeatures(scdata, selection.method = "vst", nfeatures = 2000)
+scdata <- ScaleData(scdata)
+scdata <- RunPCA(scdata)
 
-# re-join layers after integration
+# saveRDS(object = scdata, file = "~/Desktop/04.湘湖实验室/姜雨鸡单细胞/scdata.filterbydoublecell.rds")
+
+
+#-------------------------------------------------------------------------------
+# CCA 整合（Seurat v5 IntegrateLayers）
+#-------------------------------------------------------------------------------
+
+message("\n\nCCA Integration\n\n")
+# scdata <- IntegrateLayers(
+#   object         = scdata,
+#   method         = CCAIntegration,
+#   orig.reduction = "pca",
+#   new.reduction  = "integrated.cca",
+#   verbose        = FALSE
+# )
+
+scdata <- IntegrateLayers(
+  object         = scdata,
+  method         = HarmonyIntegration,
+  orig.reduction = "pca",
+  new.reduction  = "harmony",
+  verbose        = FALSE
+)
+
 scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
 
 #-------------------------------------------------------------------------------
-# 整合后的样本降维聚类【整合后不能再运行normalized】
+# 整合后降维聚类
 #-------------------------------------------------------------------------------
 
-message("\n\n Rerun UMAP\n\n") 
-scdata <- FindNeighbors(scdata, reduction = "integrated.cca", dims = 1:30)
+message("\n\nClustering & UMAP\n\n")
+scdata <- FindNeighbors(scdata, reduction = "harmony", dims = 1:30)
 scdata <- FindClusters(scdata, resolution = 1)
-scdata <- RunUMAP(scdata, dims = 1:30)
+scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
 
 saveRDS(object = scdata, file = "scdata.rds")
+
 
 #-------------------------------------------------------------------------------
 # 可视化
 #-------------------------------------------------------------------------------
 
 # Visualization
-# p1 <- DimPlot(scdata, reduction = "umap", group.by = c("stim", "seurat_annotations"))
-# p2 <- DimPlot(scdata, reduction = "umap", split.by = "stim")
+p <- DimPlot(scdata, reduction = "umap", label = TRUE)
+ggplot2::ggsave(file = "umap.cluster.pdf", plot = p , width = 6, height = 5)
 
+p.splitbysample <- DimPlot(scdata, reduction = "umap", label = TRUE, split.by = "orig.ident")  # split.by 指定的meta.data中的列
+ggplot2::ggsave(file = "umap.cluster.splitbysample.pdf", plot = p.splitbysample,  width = 10, height = 5)
+
+
+# 每个样本细胞数量统计
+cluster_count <- scdata@meta.data %>%
+  group_by(seurat_clusters, orig.ident) %>%
+  summarise(n = n(), .groups = "drop")
+
+write.table(x = cluster_count, file = "cluster_cells_count.tsv", row.names = F, quote = F, sep = "\t")
+
+
+#-------------------------------------------------------------------------------
+# 提取各 cluster 的 marker 基因
+#-------------------------------------------------------------------------------
+message("\n\nFinding markers for all clusters\n\n")
+
+all_markers <- FindAllMarkers(scdata,
+                              only.pos = TRUE,
+                              min.pct = 0.25,
+                              logfc.threshold = 0.25,
+                              verbose = FALSE) |>
+  dplyr::select(gene, cluster, everything())
+
+write.table(all_markers, "all_markers.tsv", row.names = FALSE, quote = F, sep = "\t")
+
+# 每个 cluster 取 top10 marker
+top10 <- all_markers %>%
+  group_by(cluster) %>%
+  slice_max(order_by = avg_log2FC, n = 10) %>%
+  ungroup() |>
+  dplyr::select(gene, cluster, everything())
+
+write.table(top10, "top10_markers.csv", row.names = FALSE, quote = F, sep = "\t")
+
+
+# 每个 cluster 取 top5 marker（用于热图展示，太多会挤）
+topn_marker <- all_markers %>%
+  group_by(cluster) %>%
+  slice_max(order_by = avg_log2FC, n = 3) %>%
+  ungroup()
+
+p_dot <- DotPlot(scdata, features = unique(topn_marker$gene)) +
+  RotatedAxis() +
+  theme(axis.text.x = element_text(size = 7))
+
+ggsave(filename = "marker.cluster.pdf", plot = p_dot, width = 16, height = 5)
 
 
 
