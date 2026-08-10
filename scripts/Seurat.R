@@ -22,14 +22,20 @@ suppressMessages({
 #-------------------------------------------------------------------------------
 
 option_list <- list(
-  make_option("--SampleFile", type="character", default=NULL, help="config/samples.csv")
+  make_option("--SampleFile", type="character", default=NULL, help="config/samples.csv"),
+  make_option("--MTpattern", type="character", default=NULL, help="线粒体基因前缀"),
+  make_option("--percentMT", type="double", default=NULL, help="基础指控要求线粒体比例")
 )
 
 args <- parse_args(OptionParser(option_list=option_list))
 
 SampleFile <- args$SampleFile
+MTpattern <- args$MTpattern
+percentMT <- args$percentMT
 
-
+# SampleFile <- "~/Desktop/04.湘湖实验室/姜雨鸡单细胞/sampleandpopulation.csv"
+# MTpattern <- "J6367"
+# percentMT <- 15
 #-------------------------------------------------------------------------------
 # 读取数据
 #-------------------------------------------------------------------------------
@@ -52,7 +58,7 @@ scdata <- CreateSeuratObject(counts = scdata.data, project = "jiangyu", min.cell
 
 message("\n\nQuality control\n\n")
 # 计算线粒体比例
-scdata[["percent.mt"]] <- PercentageFeatureSet(scdata, pattern = "J6367")
+scdata[["percent.mt"]] <- PercentageFeatureSet(scdata, pattern = MTpattern)
 
 # Visualize QC metrics as a violin plot
 # VlnPlot(scdata, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
@@ -66,7 +72,7 @@ upperlimit <- scdata@meta.data |>
 scdata@meta.data$upperlimit_nFeature_RNA <- scdata@meta.data |> 
   left_join(upperlimit, by = "orig.ident") |> 
   pull(upperlimit_nFeature_RNA)
-scdata <- subset(scdata, cells = scdata@meta.data |> filter(nFeature_RNA > 500 & nFeature_RNA < upperlimit_nFeature_RNA & percent.mt < 15) |> rownames())
+scdata <- subset(scdata, cells = scdata@meta.data |> filter(nFeature_RNA > 500 & nFeature_RNA < upperlimit_nFeature_RNA & percent.mt < percentMT) |> rownames())
 
 
 #-------------------------------------------------------------------------------
@@ -92,7 +98,14 @@ seu_list <- lapply(seu_list, function(x) {
   x
 })
 
-scdata <- merge(seu_list[[1]], y = seu_list[-1], project = "jiangyu")
+
+message("\n\nMerge samples\n\n")
+if (length(seu_list) == 1) {
+  scdata <- seu_list[[1]]
+} else {
+  scdata <- merge(seu_list[[1]], y = seu_list[-1], project = "jiangyu")
+}
+remove(seu_list)
 
 
 #-------------------------------------------------------------------------------
@@ -100,7 +113,6 @@ scdata <- merge(seu_list[[1]], y = seu_list[-1], project = "jiangyu")
 # Seurat v5 标准流程：归一化 → HVG → Scale → PCA
 # v5 中 merge 后 RNA assay 已按 orig.ident 自动分 layer
 #-------------------------------------------------------------------------------
-
 
 message("\n\nNormalization & PCA\n\n")
 scdata <- NormalizeData(scdata)
@@ -171,7 +183,7 @@ write.table(x = cluster_count, file = "cluster_cells_count.tsv", row.names = F, 
 #-------------------------------------------------------------------------------
 message("\n\nFinding markers for all clusters\n\n")
 
-all_markers <- FindAllMarkers(scdata,
+all_markers <- FindAllMarkers(scdata, 
                               only.pos = TRUE,
                               min.pct = 0.25,
                               logfc.threshold = 0.25,
@@ -187,7 +199,7 @@ top10 <- all_markers %>%
   ungroup() |>
   dplyr::select(gene, cluster, everything())
 
-write.table(top10, "top10_markers.csv", row.names = FALSE, quote = F, sep = "\t")
+write.table(top10, "top10_markers.tsv", row.names = FALSE, quote = F, sep = "\t")
 
 
 # 每个 cluster 取 top5 marker（用于热图展示，太多会挤）
