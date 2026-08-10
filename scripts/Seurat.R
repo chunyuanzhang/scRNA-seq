@@ -175,7 +175,7 @@ scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
 # 整合后降维聚类
 #-------------------------------------------------------------------------------
 
-message("\n\n", plus_one(r),": Clustering & UMAP\n\n")
+message("\n\n", plus_one(r),": Clustering & UMAP after integration\n\n")
 scdata <- FindNeighbors(scdata, reduction = "harmony", dims = 1:30)
 scdata <- FindClusters(scdata, resolution = 1)
 scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
