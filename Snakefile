@@ -31,8 +31,9 @@ def outfiles():
     if scRNA_platform == "BGI":
         include: "rules/scRNA.BGI.smk"
         if "count" in step:
-            files.append(expand(scrna_count_path + "{sample}/outs/filter_feature.h5ad", sample=samples.index))
-    
+            files.append(expand(scrna_count_path + "{sample}/outs/filter_matrix/barcodes.tsv.gz", sample=samples.index))
+            files.append(expand(scrna_count_path + "{sample}/outs/filter_matrix/features.tsv.gz", sample=samples.index))
+            files.append(expand(scrna_count_path + "{sample}/outs/filter_matrix/matrix.mtx.gz", sample=samples.index))
     # print(files)
     return files
 
