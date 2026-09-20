@@ -1,51 +1,51 @@
-SampleID,GroupID,anno
-SRR29909592,Chicken,CecalTonsil_2
-SRR29909593,Chicken,CecalTonsil_1
-SRR29909594,Chicken,Cecum
-SRR29909598,Chicken,Spleen_1
+SampleID,GroupID,anno,organ
+SRR29909592,Chicken,CecalTonsil_2,盲肠扁桃体
+SRR29909593,Chicken,CecalTonsil_1,盲肠扁桃体
+SRR29909594,Chicken,Cecum,盲肠
+SRR29909598,Chicken,Spleen_1,脾
 # SRR29909597,Chicken,Spleen_2 # 细胞数量过少，下载数据看起来还行啊
-SRR29821790,Chicken,Spleen_5
-SRR29821785,Chicken,Thymus_1
+SRR29821785,Chicken,Thymus_1,胸腺
+SRR29821790,Chicken,Spleen_5,胸腺
 # SRR29821784,Chicken,Thymus_2 # 下载两次都无法正常运行
-SRR29821786,Chicken,SmallIntestine
-SRR29909633,Chicken,BursaofFabricius_1
-SRR29909622,Chicken,BursaofFabricius_2
-SRR29909611,Chicken,BursaofFabricius_3
-SRR29821802,Chicken,BursaofFabricius_5
-SRR29909630,Chicken,Duodenum
-SRR29909623,Chicken,Intestinal_1
-SRR29909620,Chicken,Intestinal_4
-SRR29821780,Chicken,Intestinal_5
-SRR29909613,Chicken,Medullaoblongata
-SRR29821793,Chicken,Pancreas_1
-SRR29821792,Chicken,Pancreas_2
-SRR29909618,Chicken,Liver_1
-SRR29909617,Chicken,Liver_2
-SRR29821776,Chicken,Liver_3
-SRR29821801,Chicken,Liver_4
-SRR29821797,Chicken,Lung_5
-SRR29821798,Chicken,Lung_4
-SRR29909614,Chicken,Lung_4
-SRR29909609,Chicken,Olfactorybulb
-SRR29821779,Chicken,Ovary_1
-SRR29821778,Chicken,Ovary_2
-SRR29909608,Chicken,Oviduct
-SRR29909632,Chicken,Crop_1
-SRR29909631,Chicken,Crop_2
-SRR29909624,Chicken,Hypothalamus
-SRR29909634,Chicken,Adipose
-SRR29821777,Chicken,Legmuscle
-SRR29909626,Chicken,Heart_1
-SRR29909625,Chicken,Heart_2
-SRR29821791,Chicken,Heart_3
-SRR29909629,Chicken,Preventriculus_1
-# SRR29821781,Chicken,Hypothalamus_2
-SRR29909627,Chicken,Preventriculus_3
-SRR29821789,Chicken,Preventriculus_4
-SRR29821788,Chicken,Preventriculus_5
-SRR29821787,Chicken,Preventriculus_6
-SRR29909599,Chicken,Pinealbody
-SRR29909610,Chicken,Gizzard_2
-SRR29821794,Chicken,Gizzard_5
-SRR29821783,Chicken,Skin
+SRR29821786,Chicken,SmallIntestine,小肠
+SRR29909633,Chicken,BursaofFabricius_1,法氏囊
+SRR29909622,Chicken,BursaofFabricius_2,法氏囊
+SRR29909611,Chicken,BursaofFabricius_3,法氏囊
+SRR29821802,Chicken,BursaofFabricius_5,法氏囊
+SRR29909630,Chicken,Duodenum,十二指肠
+SRR29909623,Chicken,Intestinal_1,肠
+SRR29909620,Chicken,Intestinal_4,肠
+SRR29821780,Chicken,Intestinal_5,肠
+# SRR29909613,Chicken,Medullaoblongata,延髓
+SRR29821793,Chicken,Pancreas_1,胰腺
+SRR29821792,Chicken,Pancreas_2,胰腺
+# SRR29909618,Chicken,Liver_1,肝脏
+# SRR29909617,Chicken,Liver_2,肝脏
+# SRR29821776,Chicken,Liver_3,肝脏
+# SRR29821801,Chicken,Liver_4,肝脏
+# SRR29821797,Chicken,Lung_5,肺
+# SRR29821798,Chicken,Lung_4,肺
+# SRR29909614,Chicken,Lung_4,肺
+# SRR29909609,Chicken,Olfactorybulb,嗅球
+# SRR29821779,Chicken,Ovary_1,卵巢
+# SRR29821778,Chicken,Ovary_2,卵巢
+# SRR29909608,Chicken,Oviduct,输卵管
+# SRR29909632,Chicken,Crop_1,嗉囊
+# SRR29909631,Chicken,Crop_2,嗉囊
+# SRR29909610,Chicken,Gizzard_2,砂囊
+# SRR29821794,Chicken,Gizzard_5,砂囊
+# SRR29909624,Chicken,Hypothalamus,下丘脑
+# SRR29821781,Chicken,Hypothalamus_2,下丘脑
+# SRR29909599,Chicken,Pinealbody,松果体
+# SRR29909634,Chicken,Adipose,脂肪
+# SRR29821777,Chicken,Legmuscle,腿肌
+# SRR29909626,Chicken,Heart_1,心脏
+# SRR29909625,Chicken,Heart_2,心脏
+# SRR29821791,Chicken,Heart_3,心脏
+# SRR29909629,Chicken,Preventriculus_1,前胃
+# SRR29909627,Chicken,Preventriculus_3,前胃
+# SRR29821789,Chicken,Preventriculus_4,前胃
+# SRR29821788,Chicken,Preventriculus_5,前胃
+# SRR29821787,Chicken,Preventriculus_6,前胃
+# SRR29821783,Chicken,Skin,皮肤
 

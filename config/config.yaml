@@ -1,6 +1,6 @@
 
 scRNA_platform: BGI  #10X
-step: count 
+step: count,cluster
 species: Chicken 
 
 # scrna_reference: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.fna

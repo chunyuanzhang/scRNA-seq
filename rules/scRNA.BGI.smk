@@ -38,7 +38,7 @@ rule Seurat5:
         features = expand(scrna_count_path + "{sample}/outs/filter_matrix/features.tsv.gz", sample=samples.index),
         matrix = expand(scrna_count_path + "{sample}/outs/filter_matrix/matrix.mtx.gz", sample=samples.index)
     output:
-        rds = "result/scdata.rds"
+        rds = "result/03.Seurat/scdata.rds"
     threads:
         16
     params:
@@ -50,6 +50,21 @@ rule Seurat5:
         ~/tools/Seurat/bin/Rscript scripts/Seurat.R \
             --SampleFile {params.samplefile} \
             --MTpattern {params.MTpattern} \
-            --percentMT {params.percentMT}
+            --percentMT {params.percentMT} \
+            --OutPath result/03.Seurat 
         """
 
+rule findMarkers:
+    input:
+        rds = "result/03.Seurat/scdata.rds"
+    output:
+        allmarkers = "result/03.Seurat/all_markers.tsv",
+        top10markers = "result/03.Seurat/top10_markers.tsv"
+    threads:
+        16
+    shell:
+        """
+        ~/tools/Seurat/bin/Rscript scripts/findMarkers.R \
+            --RDS {input.rds} \
+            --OutPath result/03.Seurat
+        """

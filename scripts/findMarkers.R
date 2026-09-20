@@ -50,15 +50,15 @@ p <- DimPlot(scdata, reduction = "umap", label = TRUE)
 ggplot2::ggsave(file = "umap.cluster.pdf", plot = p , width = 6, height = 5)
 
 p.splitbysample <- DimPlot(scdata, reduction = "umap", label = TRUE, split.by = "orig.ident")  # split.by 指定的meta.data中的列
-ggplot2::ggsave(file = "umap.cluster.splitbysample.pdf", plot = p.splitbysample,  width = 10, height = 5)
+ggplot2::ggsave(file = add_path(OutPath,"umap.cluster.splitbysample.pdf"), plot = p.splitbysample,  width = 10, height = 5)
 
 
 # 每个样本细胞数量统计
-cluster_count <- scdata@meta.data %>%
-  group_by(seurat_clusters, orig.ident) %>%
-  summarise(n = n(), .groups = "drop")
+# cluster_count <- scdata@meta.data %>%
+#   group_by(seurat_clusters, orig.ident) %>%
+#   summarise(n = n(), .groups = "drop")
 
-write.table(x = cluster_count, file = "cluster_cells_count.tsv", row.names = F, quote = F, sep = "\t")
+# write.table(x = cluster_count, file = "cluster_cells_count.tsv", row.names = F, quote = F, sep = "\t")
 
 
 #-------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ all_markers <- FindAllMarkers(scdata,
                               verbose = FALSE) |>
   dplyr::select(gene, cluster, everything())
 
-write.table(all_markers, "all_markers.tsv", row.names = FALSE, quote = F, sep = "\t")
+write.table(all_markers, add_path(OutPath,"all_markers.tsv"), row.names = FALSE, quote = F, sep = "\t")
 
 # 每个 cluster 取 top10 marker
 top10 <- all_markers %>%
@@ -82,7 +82,7 @@ top10 <- all_markers %>%
   ungroup() |>
   dplyr::select(gene, cluster, everything())
 
-write.table(top10, "top10_markers.tsv", row.names = FALSE, quote = F, sep = "\t")
+write.table(top10, add_path(OutPath,"top10_markers.tsv"), row.names = FALSE, quote = F, sep = "\t")
 
 
 # 每个 cluster 取 top5 marker（用于热图展示，太多会挤）
@@ -95,7 +95,7 @@ p_dot <- DotPlot(scdata, features = unique(topn_marker$gene)) +
   RotatedAxis() +
   theme(axis.text.x = element_text(size = 7))
 
-ggsave(filename = "marker.cluster.pdf", plot = p_dot, width = 16, height = 5)
+ggsave(filename = add_path(OutPath,"marker.cluster.pdf"), plot = p_dot, width = 16, height = 5)
 
 
 
