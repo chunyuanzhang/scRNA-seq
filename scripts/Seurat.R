@@ -17,6 +17,8 @@ suppressMessages({
   library(S4Vectors)
 })
 
+source("scripts/function.R")
+
 
 #-------------------------------------------------------------------------------
 # 参数传递
@@ -25,7 +27,8 @@ suppressMessages({
 option_list <- list(
   make_option("--SampleFile", type="character", default=NULL, help="config/samples.csv"),
   make_option("--MTpattern", type="character", default=NULL, help="线粒体基因前缀"),
-  make_option("--percentMT", type="double", default=NULL, help="基础指控要求线粒体比例")
+  make_option("--percentMT", type="double", default=NULL, help="基础指控要求线粒体比例"),
+  make_option("--OutPath", type = "character", default="./", help = "输出文件的路径")
 )
 
 args <- parse_args(OptionParser(option_list=option_list))
@@ -33,11 +36,13 @@ args <- parse_args(OptionParser(option_list=option_list))
 SampleFile <- args$SampleFile
 MTpattern <- args$MTpattern
 percentMT <- args$percentMT
+OutPath <- args$OutPath
+OutPath <- check_path(OutPath)
 
 # SampleFile <- "~/Desktop/04.湘湖实验室/姜雨鸡单细胞/sampleandpopulation.csv"
 # MTpattern <- "J6367"
 # percentMT <- 15
-
+# OutPath <- "~/Desktop/04.湘湖实验室/姜雨鸡单细胞"
 
 plus_one <- function(r){
   r <<- r + 1
@@ -100,8 +105,7 @@ sample_cellnumber <- lapply(seu_list, function(x) {
 
 write.table(x = sample_cellnumber, file = "NumberOfCells.tsv", quote = F, sep = "\t")
 if(any(sample_cellnumber$NumberOfCells < 100 )){
-  message("\n\n\n存在细胞数量过低样本，请核查\n\n\n")
-  quit()
+  stop("存在细胞数过低样本，请查看文件 NumberOfCells.tsv")
 }
 
 
@@ -172,7 +176,7 @@ scdata <- IntegrateLayers(
 scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
 
 #-------------------------------------------------------------------------------
-# 整合后降维聚类
+# 尝试多个分辨率，选择手动合适的分辨率
 #-------------------------------------------------------------------------------
 
 message("\n\n", plus_one(r),": Clustering & UMAP after integration\n\n")
@@ -181,66 +185,16 @@ for (res in c(0.3, 0.5, 0.8, 1.0, 1.2)) {
   # 多跑几个分辨率，好进行对比，避免过多或不足
   scdata <- FindClusters(scdata, resolution = res, verbose = FALSE)
 }
-scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
 
-saveRDS(object = scdata, file = "scdata.rds")
+pclustree <- clustree::clustree(scdata, prefix = "RNA_snn_res.")
+pclustree <- pclustree + guides(edge_colour = "none", edge_alpha = "none")
 
-
-#-------------------------------------------------------------------------------
-# 可视化
-#-------------------------------------------------------------------------------
-
-# Visualization
-p <- DimPlot(scdata, reduction = "umap", label = TRUE)
-ggplot2::ggsave(file = "umap.cluster.pdf", plot = p , width = 6, height = 5)
-
-p.splitbysample <- DimPlot(scdata, reduction = "umap", label = TRUE, split.by = "orig.ident")  # split.by 指定的meta.data中的列
-ggplot2::ggsave(file = "umap.cluster.splitbysample.pdf", plot = p.splitbysample,  width = 10, height = 5)
+ggsave(plot = pclustree, filename = paste0(OutPath, "clustree.pdf"), width = 14, height = 8)
 
 
-# 每个样本细胞数量统计
-cluster_count <- scdata@meta.data %>%
-  group_by(seurat_clusters, orig.ident) %>%
-  summarise(n = n(), .groups = "drop")
+# 需要手动挑选 “分辨率”，因此在这里就要先保存scdata
+saveRDS(object = scdata, file = paste0(OutPath, "scdata.rds"))
 
-write.table(x = cluster_count, file = "cluster_cells_count.tsv", row.names = F, quote = F, sep = "\t")
-
-
-#-------------------------------------------------------------------------------
-# 提取各 cluster 的 marker 基因
-#-------------------------------------------------------------------------------
-message("\n\nFinding markers for all clusters\n\n")
-
-all_markers <- FindAllMarkers(scdata, 
-                              only.pos = TRUE,
-                              min.pct = 0.25,
-                              logfc.threshold = 0.25,
-                              verbose = FALSE) |>
-  dplyr::select(gene, cluster, everything())
-
-write.table(all_markers, "all_markers.tsv", row.names = FALSE, quote = F, sep = "\t")
-
-# 每个 cluster 取 top10 marker
-top10 <- all_markers %>%
-  group_by(cluster) %>%
-  slice_max(order_by = avg_log2FC, n = 10) %>%
-  ungroup() |>
-  dplyr::select(gene, cluster, everything())
-
-write.table(top10, "top10_markers.tsv", row.names = FALSE, quote = F, sep = "\t")
-
-
-# 每个 cluster 取 top5 marker（用于热图展示，太多会挤）
-topn_marker <- all_markers %>%
-  group_by(cluster) %>%
-  slice_max(order_by = avg_log2FC, n = 3) %>%
-  ungroup()
-
-p_dot <- DotPlot(scdata, features = unique(topn_marker$gene)) +
-  RotatedAxis() +
-  theme(axis.text.x = element_text(size = 7))
-
-ggsave(filename = "marker.cluster.pdf", plot = p_dot, width = 16, height = 5)
 
 
 
