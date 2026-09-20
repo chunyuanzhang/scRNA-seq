@@ -76,6 +76,7 @@ include_introns = str(include_introns).lower()
 output_bam = config["analysis"]["count"]["output_bam"]
 output_bam = str(output_bam).lower()
 percentMT = config["analysis"]["create"]["percentMT"]
+MTpattern = config["analysis"]["create"]["MTpattern"]
 cluster_resolution = config["analysis"]["cluster"]["resolution"]
 topn = config["analysis"]["marker"]["topn"]
 by = config["analysis"]["marker"]["by"]
@@ -83,8 +84,6 @@ p_val = config["analysis"]["diffexp"]["p_val"]
 avg_log2FC = config["analysis"]["diffexp"]["avg_log2FC"]
 min_pct1 = config["analysis"]["diffexp"]["min_pct1"]
 Orthologous = config["analysis"]["celltype"]["Orthologous"]
-
-
 
 
 version_10X_chemistry = config["analysis"]["AlternativeSplincing"]["version_10X_chemistry"]

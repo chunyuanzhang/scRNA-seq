@@ -176,8 +176,11 @@ scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
 #-------------------------------------------------------------------------------
 
 message("\n\n", plus_one(r),": Clustering & UMAP after integration\n\n")
-scdata <- FindNeighbors(scdata, reduction = "harmony", dims = 1:30)
-scdata <- FindClusters(scdata, resolution = 1)
+scdata <- FindNeighbors(scdata, reduction = "harmony", dims = 1:30, verbose = FALSE)
+for (res in c(0.3, 0.5, 0.8, 1.0, 1.2)) {
+  # 多跑几个分辨率，好进行对比，避免过多或不足
+  scdata <- FindClusters(scdata, resolution = res, verbose = FALSE)
+}
 scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
 
 saveRDS(object = scdata, file = "scdata.rds")

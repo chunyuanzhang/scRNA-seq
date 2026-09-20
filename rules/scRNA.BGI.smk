@@ -13,7 +13,7 @@ rule dnbc4tools:
         # rawfeatures = temp(scrna_count_path + "{sample}/outs/raw_matrix/features.tsv.gz"),
         # rawmatrix = temp(scrna_count_path + "{sample}/outs/raw_matrix/matrix.mtx.gz")
     threads: 
-        64
+        40
     params:
         genomeDir = "~/zhangchunyuan/reference/bGalGal1_mat_broiler_GRCg7b/dnbc4/Chicken",
         name = "{sample}"
@@ -32,4 +32,24 @@ rule dnbc4tools:
         """
 
 
+rule Seurat5:
+    input:
+        barcodes = expand(scrna_count_path + "{sample}/outs/filter_matrix/barcodes.tsv.gz", sample=samples.index),
+        features = expand(scrna_count_path + "{sample}/outs/filter_matrix/features.tsv.gz", sample=samples.index),
+        matrix = expand(scrna_count_path + "{sample}/outs/filter_matrix/matrix.mtx.gz", sample=samples.index)
+    output:
+        rds = "result/scdata.rds"
+    threads:
+        16
+    params:
+        percentMT = percentMT,
+        MTpattern = MTpattern,
+        samplefile = samplefile
+    shell:
+        """
+        ~/tools/Seurat/bin/Rscript scripts/Seurat.R \
+            --SampleFile {params.samplefile} \
+            --MTpattern {params.MTpattern} \
+            --percentMT {params.percentMT}
+        """
 

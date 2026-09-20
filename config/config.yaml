@@ -1,7 +1,6 @@
 
 scRNA_platform: BGI  #10X
-step: count
-
+step: count 
 species: Chicken 
 
 # scrna_reference: /home/zhangchunyuan/zhangchunyuan/reference/IASCAAS_PekinDuck_T2T/GCF_047663525.1_IASCAAS_PekinDuck_T2T_genomic.fna
@@ -20,7 +19,8 @@ analysis:
     include_introns: true
     output_bam: true
   create:
-    percentMT: 5
+    percentMT: 15
+    MTpattern: J6367
   cluster:
     resolution: 0.3
   marker:
