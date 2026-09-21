@@ -22,7 +22,7 @@ analysis:
     percentMT: 15
     MTpattern: J6367
   cluster:
-    resolution: 0.3
+    resolution: 0.3,0.5,0.8,1,1.2
   marker:
     topn: 10
     by: celltype.manual

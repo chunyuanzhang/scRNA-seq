@@ -44,27 +44,36 @@ rule Seurat5:
     params:
         percentMT = percentMT,
         MTpattern = MTpattern,
-        samplefile = samplefile
+        samplefile = samplefile,
+        resolutions_str = resolutions_str
+    log:
+        "logs/03.Seurat/Seurat.log"
     shell:
         """
         ~/tools/Seurat/bin/Rscript scripts/Seurat.R \
             --SampleFile {params.samplefile} \
             --MTpattern {params.MTpattern} \
             --percentMT {params.percentMT} \
-            --OutPath result/03.Seurat 
+            --resolution {params.resolutions_str} \
+            --OutPath result/03.Seurat > {log} 2>&1
         """
 
 rule findMarkers:
     input:
         rds = "result/03.Seurat/scdata.rds"
     output:
-        allmarkers = "result/03.Seurat/all_markers.tsv",
-        top10markers = "result/03.Seurat/top10_markers.tsv"
+        allmarkers = "result/03.Seurat/all_markers.{resolution}.tsv",
+        top10markers = "result/03.Seurat/top10_markers.{resolution}.tsv"
     threads:
-        16
+        4
+    params:
+        resolution = lambda wildcards: wildcards.resolution
+    log:
+        "logs/03.Seurat/findMarkers.{resolution}.log"
     shell:
         """
         ~/tools/Seurat/bin/Rscript scripts/findMarkers.R \
             --RDS {input.rds} \
-            --OutPath result/03.Seurat
+            --resolution {params.resolution} \
+            --OutPath result/03.Seurat > {log} 2>&1
         """

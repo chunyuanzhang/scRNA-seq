@@ -11,23 +11,24 @@ suppressMessages({
   library(S4Vectors)
 })
 
+source("scripts/function.R")
 
 #-------------------------------------------------------------------------------
 # 参数传递
 #-------------------------------------------------------------------------------
 
 option_list <- list(
-  make_option("--RDSfile", type="character", default=NULL, help="scdata.rds"),
-  make_option("--resolution", type="double", default=NULL, help="根据上一步选出来的最佳分辨率"),
+  make_option("--RDS", type="character", default=NULL, help="scdata.rds"),
+  make_option("--resolution", type="numeric", default=NULL, help="分辨率"),
   make_option("--OutPath", type = "character", default="./", help = "输出文件的路径")
 )
 
 args <- parse_args(OptionParser(option_list=option_list))
 
-SampleFile <- args$SampleFile
+RDS <- args$RDS
 resolution <- args$resolution
 OutPath <- args$OutPath
-
+OutPath <- check_path(OutPath)
 
 
 ## 选择合适的分辨率后需要显式指定分辨率
@@ -36,9 +37,15 @@ OutPath <- args$OutPath
 # 整合后降维聚类
 #-------------------------------------------------------------------------------
 
-resolution <- paste0("RNA_snn_res.", as.character(resolution))
-Idents(scdata) <- resolution
+message("\n\n指定 resolution 降维聚类\n\n")
+
+scdata <- readRDS(RDS)
+resolution_snn <- paste0("RNA_snn_res.", as.character(resolution))
+message("\n\t\t",resolution_snn,"\n\n")
+Idents(scdata) <- resolution_snn
 scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
+
+saveRDS(object = scdata, file = paste0(OutPath, "scdata.", resolution, ".rds"))
 
 
 #-------------------------------------------------------------------------------
@@ -46,11 +53,12 @@ scdata <- RunUMAP(scdata, reduction = "harmony", dims = 1:30)
 #-------------------------------------------------------------------------------
 
 # Visualization
+message("\n\n可视化 UMAP\n\n")
 p <- DimPlot(scdata, reduction = "umap", label = TRUE)
-ggplot2::ggsave(file = "umap.cluster.pdf", plot = p , width = 6, height = 5)
+ggplot2::ggsave(file = paste0(OutPath, "umap.cluster.", resolution,".pdf"), plot = p , width = 6, height = 5)
 
 p.splitbysample <- DimPlot(scdata, reduction = "umap", label = TRUE, split.by = "orig.ident")  # split.by 指定的meta.data中的列
-ggplot2::ggsave(file = add_path(OutPath,"umap.cluster.splitbysample.pdf"), plot = p.splitbysample,  width = 10, height = 5)
+ggplot2::ggsave(file = paste0(OutPath,"umap.cluster.splitbysample.", resolution,".pdf"), plot = p.splitbysample,  width = 10, height = 5)
 
 
 # 每个样本细胞数量统计
@@ -64,6 +72,7 @@ ggplot2::ggsave(file = add_path(OutPath,"umap.cluster.splitbysample.pdf"), plot 
 #-------------------------------------------------------------------------------
 # 提取各 cluster 的 marker 基因
 #-------------------------------------------------------------------------------
+
 message("\n\nFinding markers for all clusters\n\n")
 
 all_markers <- FindAllMarkers(scdata, 
@@ -73,7 +82,9 @@ all_markers <- FindAllMarkers(scdata,
                               verbose = FALSE) |>
   dplyr::select(gene, cluster, everything())
 
-write.table(all_markers, add_path(OutPath,"all_markers.tsv"), row.names = FALSE, quote = F, sep = "\t")
+outfile <- paste0(OutPath,"all_markers.",resolution,".tsv")
+print(outfile)
+write.table(x = all_markers, file = outfile, row.names = FALSE, quote = F, sep = "\t")
 
 # 每个 cluster 取 top10 marker
 # top10 <- all_markers %>%
@@ -87,15 +98,17 @@ write.table(all_markers, add_path(OutPath,"all_markers.tsv"), row.names = FALSE,
 RIBO_PATTERN <- "^(RPL[0-9]+[A-Z]{0,2}|RPS[0-9]+[A-Z]{0,2}|RPLP[0-9]|MRPL[0-9]+|MRPS[0-9]+[A-Z]?)$"
  
  
-select_top_markers <- function(markers, n = 10,
-                               padj_max        = 0.05,
-                               lfc_min         = 0.5,    # 最低 log2FC
-                               pct1_min        = 0.25,   # 本 cluster 中至少多少比例细胞表达
-                               diff_min        = 0.10,   # pct.1 - pct.2 的最低差值
-                               exclude_pattern = RIBO_PATTERN,
-                               exclude_genes   = NULL,   # 例如线粒体基因、血红蛋白基因
-                               unique_genes    = FALSE,
-                               warn_excluded   = 0.3) {  # 显著基因中被排除基因占比超过此值时提示
+select_top_markers <- function(markers, 
+                              n = 10,
+                              padj_max        = 0.05,
+                              lfc_min         = 0.5,    # 最低 log2FC
+                              pct1_min        = 0.25,   # 本 cluster 中至少多少比例细胞表达
+                              diff_min        = 0.10,   # pct.1 - pct.2 的最低差值
+                              exclude_pattern = RIBO_PATTERN,
+                              exclude_genes   = NULL,   # 例如线粒体基因、血红蛋白基因
+                              unique_genes    = FALSE,
+                              warn_excluded   = 0.3     # 显著基因中被排除基因占比超过此值时提示
+                              ) {  
  
   is_excluded <- function(g) grepl(exclude_pattern, g) | g %in% exclude_genes
  
@@ -158,21 +171,21 @@ select_top_markers <- function(markers, n = 10,
  
 top10_markers <- select_top_markers(all_markers)
 
-write.table(top10_markers, add_path(OutPath,"top10_markers.tsv"), row.names = FALSE, quote = F, sep = "\t")
+write.table(top10_markers, paste0(OutPath,"top10_markers.", resolution, ".tsv"), row.names = FALSE, quote = F, sep = "\t")
 
 
 # 每个 cluster 取 top5 marker（用于热图展示，太多会挤）
-topn_marker <- all_markers %>%
+top10_markers <- all_markers %>%
   group_by(cluster) %>%
   # slice_max(order_by = avg_log2FC, n = 3) %>%
   top_n(n = 5, wt = avg_log2FC) %>%
   ungroup()
 
-p_dot <- DotPlot(scdata, features = unique(topn_marker$gene)) +
+p_dot <- DotPlot(scdata, features = unique(top10_markers$gene)) +
   RotatedAxis() +
   theme(axis.text.x = element_text(size = 7))
 
-ggsave(filename = add_path(OutPath,"marker.cluster.pdf"), plot = p_dot, width = 16, height = 5)
+ggsave(filename = paste0(OutPath,"marker.cluster.", resolution, ".pdf"), plot = p_dot, width = 16, height = 5)
 
 
 

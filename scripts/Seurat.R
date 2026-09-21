@@ -28,6 +28,7 @@ option_list <- list(
   make_option("--SampleFile", type="character", default=NULL, help="config/samples.csv"),
   make_option("--MTpattern", type="character", default=NULL, help="线粒体基因前缀"),
   make_option("--percentMT", type="double", default=NULL, help="基础指控要求线粒体比例"),
+  make_option("--resolution", type="character", default=NULL, help="分辨率列表"),
   make_option("--OutPath", type = "character", default="./", help = "输出文件的路径")
 )
 
@@ -36,6 +37,8 @@ args <- parse_args(OptionParser(option_list=option_list))
 SampleFile <- args$SampleFile
 MTpattern <- args$MTpattern
 percentMT <- args$percentMT
+resolution <- args$resolution
+resolution <- as.numeric(unlist(strsplit(resolution, split = ",")))
 OutPath <- args$OutPath
 OutPath <- check_path(OutPath)
 
@@ -181,19 +184,25 @@ scdata[["RNA"]] <- JoinLayers(scdata[["RNA"]])
 
 message("\n\n", plus_one(r),": Clustering & UMAP after integration\n\n")
 scdata <- FindNeighbors(scdata, reduction = "harmony", dims = 1:30, verbose = FALSE)
-for (res in c(0.3, 0.5, 0.8, 1.0, 1.2)) {
+for (res in resolution) {
   # 多跑几个分辨率，好进行对比，避免过多或不足
+  message("\n\n\t\t\t", ": Clustering with resolution = ", res, "\n\n")
   scdata <- FindClusters(scdata, resolution = res, verbose = FALSE)
 }
+# 所有分辨率执行完毕后写入 scdata.rds 文件
+saveRDS(object = scdata, file = paste0(OutPath, "scdata.rds"))
 
+
+#-------------------------------------------------------------------------------
+# 给不同分辨率的聚类结果画 clustree 图，帮助选择合适的分辨率
+#-------------------------------------------------------------------------------
+
+message("\n\n", plus_one(r),": Clustree \n\n")
 pclustree <- clustree::clustree(scdata, prefix = "RNA_snn_res.")
 pclustree <- pclustree + guides(edge_colour = "none", edge_alpha = "none")
-
 ggsave(plot = pclustree, filename = paste0(OutPath, "clustree.pdf"), width = 14, height = 8)
 
 
-# 需要手动挑选 “分辨率”，因此在这里就要先保存scdata
-saveRDS(object = scdata, file = paste0(OutPath, "scdata.rds"))
 
 
 

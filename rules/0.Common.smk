@@ -84,7 +84,8 @@ p_val = config["analysis"]["diffexp"]["p_val"]
 avg_log2FC = config["analysis"]["diffexp"]["avg_log2FC"]
 min_pct1 = config["analysis"]["diffexp"]["min_pct1"]
 Orthologous = config["analysis"]["celltype"]["Orthologous"]
-
+resolutions = [x.strip() for x in config["analysis"]["cluster"]["resolution"].split(",")]
+resolutions_str = config["analysis"]["cluster"]["resolution"].replace(" ", "")
 
 version_10X_chemistry = config["analysis"]["AlternativeSplincing"]["version_10X_chemistry"]
 if version_10X_chemistry == "V3":

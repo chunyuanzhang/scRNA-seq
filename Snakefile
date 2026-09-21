@@ -36,7 +36,8 @@ def outfiles():
             files.append(expand(scrna_count_path + "{sample}/outs/filter_matrix/matrix.mtx.gz", sample=samples.index))
         if "cluster" in step:
             files.append("result/03.Seurat/scdata.rds")
-            #files.append(scrna_cluster_path + "umap.cluster.pdf")
+            files.append(expand("result/03.Seurat/all_markers.{resolution}.tsv", resolution = resolutions))
+            files.append(expand("result/03.Seurat/top10_markers.{resolution}.tsv", resolution = resolutions))
     # print(files)
     return files
 
